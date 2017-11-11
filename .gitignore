@@ -1,0 +1,38 @@
+# local:
+!.gitignore
+/out/
+/tmp/
+/temp/
+/build/
+/*.log
+*.pyc
+
+# https://github.com/github/gitignore/blob/master/Global/Windows.gitignore
+Thumbs.db
+ethumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# https://github.com/github/gitignore/blob/master/Global/OSX.gitignore
+*.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# https://github.com/github/gitignore/blob/master/Global/Linux.gitignore
+.fuse_hidden
+*~
+.directory
+.Trash-*
