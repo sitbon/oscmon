@@ -78,10 +78,13 @@ def display_update():
 
     if not params.no_curses:
         for index in range(len(osc_entries), len(osc_entries)+10):
-            scr.addstr(index + 2, 0, " " * 140)
+            try:
+                scr.addstr(index + 2, 0, " " * 140)
+            except:
+                pass
 
         scr.addstr(0, 0, header)
-        scr.addstr(36, 0, '')
+        # scr.addstr(36, 0, '')
         scr.refresh()
 
 
