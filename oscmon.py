@@ -71,14 +71,18 @@ def display_update():
             source, entry.path, data_summary
         )
 
-        scr.addstr(index + 2, 0, summary, curses.color_pair(color))
+        if not params.no_curses:
+            scr.addstr(index + 2, 0, summary, curses.color_pair(color))
+        else:
+            print(summary)
 
-    for index in range(len(osc_entries), len(osc_entries)+10):
-        scr.addstr(index + 2, 0, " " * 140)
+    if not params.no_curses:
+        for index in range(len(osc_entries), len(osc_entries)+10):
+            scr.addstr(index + 2, 0, " " * 140)
 
-    scr.addstr(0, 0, header)
-    scr.addstr(36, 0, '')
-    scr.refresh()
+        scr.addstr(0, 0, header)
+        scr.addstr(36, 0, '')
+        scr.refresh()
 
 
 def main(args):
@@ -95,8 +99,11 @@ def main(args):
     mreq = socket.inet_aton(args.addr) + mcast_iface_aton
     osc.socket.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
-    osc.timeout = 0.1
-    osc.handle_timeout = display_update
+    if not args.no_curses:
+        osc.timeout = 0.1
+        osc.handle_timeout = display_update
+    else:
+        osc.timeout = 0.25
 
     osc.server_activate()
 
@@ -110,35 +117,41 @@ if __name__ == '__main__':
     parser.add_argument('addr', metavar='ADDR', help='multicast source address')
     parser.add_argument('port', metavar='PORT', type=int, help='multicast source port')
     parser.add_argument('-i', '--iface', default="0.0.0.0", metavar='IFADDR', help='interface address for multicast input')
+    parser.add_argument('-n', '--no-curses', action='store_true', help='do not use curses')
 
-    scr = curses.initscr()
+    params = None
 
     try:
-        curses.noecho()
-        curses.cbreak()
-        curses.start_color()
-        curses.use_default_colors()
+        params = parser.parse_args()
 
-        if curses.can_change_color():
-            curses.init_color(curses.COLOR_BLACK, 0, 0, 0)
-            curses.init_color(curses.COLOR_WHITE, 255, 255, 255)
-            curses.init_color(curses.COLOR_GREEN, 0, 255, 0)
-            curses.init_color(curses.COLOR_YELLOW, 255, 255, 0)
-            curses.init_color(curses.COLOR_RED, 255, 0, 0)
-            curses.init_color(curses.COLOR_MAGENTA, 255, 0, 255)
+        if not params.no_curses:
+            scr = curses.initscr()
 
-        curses.init_pair(1, curses.COLOR_WHITE, -1)
-        curses.init_pair(2, curses.COLOR_GREEN, -1)
-        curses.init_pair(3, curses.COLOR_YELLOW, -1)
-        curses.init_pair(4, curses.COLOR_RED, -1)
-        curses.init_pair(5, curses.COLOR_MAGENTA, -1)
-        curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)
-        curses.init_pair(7, curses.COLOR_BLACK, curses.COLOR_GREEN)
-        curses.init_pair(8, curses.COLOR_BLACK, curses.COLOR_YELLOW)
-        curses.init_pair(9, curses.COLOR_BLACK, curses.COLOR_RED)
-        curses.init_pair(10, curses.COLOR_YELLOW, -1)
+            curses.noecho()
+            curses.cbreak()
+            curses.start_color()
+            curses.use_default_colors()
 
-        main(parser.parse_args())
+            if curses.can_change_color():
+                curses.init_color(curses.COLOR_BLACK, 0, 0, 0)
+                curses.init_color(curses.COLOR_WHITE, 255, 255, 255)
+                curses.init_color(curses.COLOR_GREEN, 0, 255, 0)
+                curses.init_color(curses.COLOR_YELLOW, 255, 255, 0)
+                curses.init_color(curses.COLOR_RED, 255, 0, 0)
+                curses.init_color(curses.COLOR_MAGENTA, 255, 0, 255)
+
+            curses.init_pair(1, curses.COLOR_WHITE, -1)
+            curses.init_pair(2, curses.COLOR_GREEN, -1)
+            curses.init_pair(3, curses.COLOR_YELLOW, -1)
+            curses.init_pair(4, curses.COLOR_RED, -1)
+            curses.init_pair(5, curses.COLOR_MAGENTA, -1)
+            curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)
+            curses.init_pair(7, curses.COLOR_BLACK, curses.COLOR_GREEN)
+            curses.init_pair(8, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+            curses.init_pair(9, curses.COLOR_BLACK, curses.COLOR_RED)
+            curses.init_pair(10, curses.COLOR_YELLOW, -1)
+
+        main(params)
 
     except KeyboardInterrupt:
         pass
@@ -147,17 +160,19 @@ if __name__ == '__main__':
         raise
 
     except:
-        curses.echo()
-        curses.nocbreak()
-        curses.endwin()
+        if params and not params.no_curses:
+            curses.echo()
+            curses.nocbreak()
+            curses.endwin()
 
         traceback.print_exc()
         sys.exit(1)
 
     finally:
-        curses.echo()
-        curses.nocbreak()
-        curses.endwin()
+        if params and not params.no_curses:
+            curses.echo()
+            curses.nocbreak()
+            curses.endwin()
 
     sys.exit(0)
 
