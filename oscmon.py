@@ -1,4 +1,7 @@
 #!/usr/bin/env python2
+"""
+Current issue: OSCServer: error on request from 10.0.0.110:44348: can't start new thread
+"""
 from __future__ import print_function
 import sys
 import os
@@ -22,6 +25,7 @@ header = "Source".ljust(28) + \
          "Data"
 
 osc_entries = {}
+out_lock = None
 
 
 class OscEntry(object):
@@ -72,9 +76,14 @@ def display_update():
         )
 
         if not params.no_curses:
-            scr.addstr(index + 2, 0, summary, curses.color_pair(color))
+            try:
+                scr.addstr(index + 2, 0, summary, curses.color_pair(color))
+            except:
+                pass
         else:
+            out_lock.acquire()
             print(summary)
+            out_lock.release()
 
     if not params.no_curses:
         for index in range(len(osc_entries), len(osc_entries)+10):
@@ -102,11 +111,13 @@ def main(args):
     mreq = socket.inet_aton(args.addr) + mcast_iface_aton
     osc.socket.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
+    osc.timeout = 0.1
+
     if not args.no_curses:
-        osc.timeout = 0.1
         osc.handle_timeout = display_update
     else:
-        osc.timeout = 0.25
+        global out_lock
+        out_lock = threading.Lock()
 
     osc.server_activate()
 
