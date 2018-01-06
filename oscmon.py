@@ -14,6 +14,8 @@ import OSC
 import curses
 import time
 
+import cleanup
+
 scr = None
 
 COLOR_GOOD = 2
@@ -126,6 +128,46 @@ def main(args):
     osc.serve_forever()
 
 
+def curses_init():
+    global scr
+    scr = curses.initscr()
+
+    curses.noecho()
+    curses.cbreak()
+    curses.start_color()
+    curses.use_default_colors()
+
+    if curses.can_change_color():
+        curses.init_color(curses.COLOR_BLACK, 0, 0, 0)
+        curses.init_color(curses.COLOR_WHITE, 255, 255, 255)
+        curses.init_color(curses.COLOR_GREEN, 0, 255, 0)
+        curses.init_color(curses.COLOR_YELLOW, 255, 255, 0)
+        curses.init_color(curses.COLOR_RED, 255, 0, 0)
+        curses.init_color(curses.COLOR_MAGENTA, 255, 0, 255)
+
+    curses.init_pair(1, curses.COLOR_WHITE, -1)
+    curses.init_pair(2, curses.COLOR_GREEN, -1)
+    curses.init_pair(3, curses.COLOR_YELLOW, -1)
+    curses.init_pair(4, curses.COLOR_RED, -1)
+    curses.init_pair(5, curses.COLOR_MAGENTA, -1)
+    curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair(7, curses.COLOR_BLACK, curses.COLOR_GREEN)
+    curses.init_pair(8, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+    curses.init_pair(9, curses.COLOR_BLACK, curses.COLOR_RED)
+    curses.init_pair(10, curses.COLOR_YELLOW, -1)
+
+    cleanup.install(curses_deinit)
+
+
+def curses_deinit():
+    try:
+        curses.echo()
+        curses.nocbreak()
+        curses.endwin()
+    except:
+        pass
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('addr', metavar='ADDR', help='multicast source address')
@@ -139,31 +181,7 @@ if __name__ == '__main__':
         params = parser.parse_args()
 
         if not params.no_curses:
-            scr = curses.initscr()
-
-            curses.noecho()
-            curses.cbreak()
-            curses.start_color()
-            curses.use_default_colors()
-
-            if curses.can_change_color():
-                curses.init_color(curses.COLOR_BLACK, 0, 0, 0)
-                curses.init_color(curses.COLOR_WHITE, 255, 255, 255)
-                curses.init_color(curses.COLOR_GREEN, 0, 255, 0)
-                curses.init_color(curses.COLOR_YELLOW, 255, 255, 0)
-                curses.init_color(curses.COLOR_RED, 255, 0, 0)
-                curses.init_color(curses.COLOR_MAGENTA, 255, 0, 255)
-
-            curses.init_pair(1, curses.COLOR_WHITE, -1)
-            curses.init_pair(2, curses.COLOR_GREEN, -1)
-            curses.init_pair(3, curses.COLOR_YELLOW, -1)
-            curses.init_pair(4, curses.COLOR_RED, -1)
-            curses.init_pair(5, curses.COLOR_MAGENTA, -1)
-            curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)
-            curses.init_pair(7, curses.COLOR_BLACK, curses.COLOR_GREEN)
-            curses.init_pair(8, curses.COLOR_BLACK, curses.COLOR_YELLOW)
-            curses.init_pair(9, curses.COLOR_BLACK, curses.COLOR_RED)
-            curses.init_pair(10, curses.COLOR_YELLOW, -1)
+            curses_init()
 
         main(params)
 
@@ -175,18 +193,14 @@ if __name__ == '__main__':
 
     except:
         if params and not params.no_curses:
-            curses.echo()
-            curses.nocbreak()
-            curses.endwin()
+            curses_deinit()
 
         traceback.print_exc()
         sys.exit(1)
 
     finally:
         if params and not params.no_curses:
-            curses.echo()
-            curses.nocbreak()
-            curses.endwin()
+            curses_deinit()
 
     sys.exit(0)
 

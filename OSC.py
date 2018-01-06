@@ -2386,12 +2386,58 @@ class ForkingOSCServer(ForkingMixIn, OSCServer):
     RequestHandlerClass = ThreadingOSCRequestHandler
 
 
-class ThreadingOSCServer(ThreadingMixIn, OSCServer):
+class ThreadQueueMixIn:
+    """Mix-in class to handle each request in a new thread."""
+
+    # Decides how threads will act upon termination of the
+    # main process
+    daemon_threads = True
+    thread_count = 1
+    queue = None
+    sem = None
+
+    def __init__(self):
+        self.queue = []
+        self.sem = threading.Semaphore(0)
+
+        for _ in range(self.thread_count):
+            t = threading.Thread(target=self.process_request_thread)
+            t.daemon = self.daemon_threads
+            t.start()
+
+    def process_request_thread(self):
+        """Same as in BaseServer but as a thread.
+
+        In addition, exception handling is done here.
+
+        """
+        while 1:
+            self.sem.acquire()
+
+            request, client_address = self.queue.pop(0)
+
+            try:
+                self.finish_request(request, client_address)
+                self.shutdown_request(request)
+            except:
+                self.handle_error(request, client_address)
+                self.shutdown_request(request)
+
+    def process_request(self, request, client_address):
+        self.queue.append((request, client_address))
+        self.sem.release()
+
+
+class ThreadingOSCServer(ThreadQueueMixIn, OSCServer):
     """An Asynchronous OSCServer.
     This server starts a new thread to handle each incoming request.
     """
     # set the RequestHandlerClass, will be overridden by ForkingOSCServer & ThreadingOSCServer
     RequestHandlerClass = ThreadingOSCRequestHandler
+
+    def __init__(self, *args, **kwds):
+        ThreadQueueMixIn.__init__(self)
+        OSCServer.__init__(self, *args, **kwds)
 
 
 ######
@@ -2738,12 +2784,12 @@ class OSCStreamingServer(TCPServer):
         return result
 
 
-class OSCStreamingServerThreading(ThreadingMixIn, OSCStreamingServer):
-    pass
+class OSCStreamingServerThreading(ThreadQueueMixIn, OSCStreamingServer):
     """ Implements a server which spawns a separate thread for each incoming
     connection. Care must be taken since the OSC address space is for all
     the same. 
     """
+    pass
 
 
 class OSCStreamingClient(OSCAddressSpace):
